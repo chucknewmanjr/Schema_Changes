@@ -8,3 +8,6 @@ SQL Server has server triggers. This repo uses database triggers. Plus, the data
 - **Schema_Change.sql** - This can be used without Schema_Validation. It creates tables, a trigger and more for recording all DDL changes.
 - **Schema_Validation.sql** - Adds validation onto Schema_Change.sql. It displays warnings if the DDL change violates any rules.
 - **Schema_Validation_Rules.sql** - This contains a base set of rules.
+
+# future changes
+the changes should be stored in a separate database on the server. . The db trigger should go into each database that gets tracked. 
