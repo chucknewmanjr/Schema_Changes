@@ -14,3 +14,4 @@ SQL Server has server triggers. This repo uses database triggers. Plus, the data
 - The [Tools].[Schema_Change_Object] table gets a database name column.
 - The db trigger should go into each database that gets tracked. 
 - Those triggers must write the database name into [Tools].[Schema_Change_Object].
+These changes mean this project wont work in azure. I think that's OK since teams usually develop on-prem.
