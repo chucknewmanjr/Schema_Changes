@@ -10,4 +10,7 @@ SQL Server has server triggers. This repo uses database triggers. Plus, the data
 - **Schema_Validation_Rules.sql** - This contains a base set of rules.
 
 # future changes
-the changes should be stored in a separate database on the server. . The db trigger should go into each database that gets tracked. 
+- the changes should be stored in a separate database on the server.
+- The [Tools].[Schema_Change_Object] table gets a database name column.
+- The db trigger should go into each database that gets tracked. 
+- those triggers must write the database name into [Tools].[Schema_Change_Object].
