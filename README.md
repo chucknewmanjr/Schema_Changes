@@ -1,15 +1,16 @@
 # Schema_Changes
 Track DDL changes for searching, repeating and validating. DDL shanges are also called schema changes. They're different from table selects, inserts, updates and deletes. They typically include CREATE, ALTER or DROP.
 ## Installation
-Executing the schema-change-database.sql script on a database sets up that database for storing schema changes. It does that by creating the SchemaChange schema and then creating tables, procs and a view in that schema. 
+Executing the *schema-change-database.sql* script on a database sets up that database for storing schema changes. It does that by creating the SchemaChange schema and then creating tables, procs and a view in that schema. 
 
-Executing the schema-change-trigger.sql script on a database sets up that databas for spotting schema chantges and requesting to have the change stored. It does that by creating a database trigger. It's different from your usual table trigger. A database must have been selected for storing schema changes before running this script.
+Executing the *schema-change-trigger.sql* script on a database sets up that databas for spotting schema chantges and requesting to have the change stored. It does that by creating a database trigger. It's different from your usual table trigger. A database must have been selected for storing schema changes before running this script.
 
-Multiple databases can be used for storing schema changes. Here's how that works. When you execute schema-change-trigger.sql, it checks if the current database stores schema changes. If it does, then it stores its own schema changes in its own tables. So schema-change-trigger.sql can be executed on every database on which schema-change-database.sql has been executed. And they all store their own schema changes in their own tables.
+Multiple databases can be used for storing schema changes. Here's how that works. When you execute *schema-change-trigger.sql*, it checks if the current database stores schema changes. If it does, then it stores its own schema changes in its own tables. So *schema-change-trigger.sql* can be executed on every database on which *schema-change-database.sql* has been executed. And they all store their own schema changes in their own tables.
 
 ## Installation Failures
-- schema-change-database.sql must be executed on a database before executing schema-change-trigger.sql on any database.
-- If schema-change-database.sql is executed on multiple databases, then schema-change-trigger.sql can only be executed on those databases.
+*schema-change-trigger.sql*
+- *schema-change-database.sql* must be executed on a database before executing *schema-change-trigger.sql* on any database.
+- If *schema-change-database.sql* is executed on multiple databases, then *schema-change-trigger.sql* can only be executed on those databases.
 
 It can be executed on multiple databases. 
 # Schema_Validation
