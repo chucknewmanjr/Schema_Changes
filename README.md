@@ -1,5 +1,7 @@
 # Schema_Changes
-Track DDL changes for searching, repeating and validating
+Track DDL changes for searching, repeating and validating. 
+## Installation
+Executing the schema-change-database.sql on a 
 # Schema_Validation
 
 
