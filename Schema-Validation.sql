@@ -4,12 +4,12 @@ if not exists (select * from sys.triggers where name = 't_SchemaChange' and pare
 if SCHEMA_ID('SchemaValidation') is null 
 	exec ('create schema [SchemaValidation] authorization [dbo];');
 
-if OBJECT_ID('[SchemaValidation].[SchemaValidationRule]') is null
-	create table [SchemaValidation].[SchemaValidationRule] (
-		SchemaValidationRuleID smallint not null identity
-			constraint PK_SchemaValidation_SchemaValidationRule primary key,
-		SchemaValidationRuleCode varchar(50) not null
-			constraint UI_Validation_SchemaValidation_SchemaValidationRuleCode unique,
+if OBJECT_ID('[SchemaValidation].[Rule]') is null
+	create table [SchemaValidation].[Rule] (
+		RuleID smallint not null identity
+			constraint PK_SchemaValidation_Rule primary key,
+		RuleCode varchar(50) not null
+			constraint UI_Validation_SchemaValidation_RuleCode unique,
 		FailureMessage varchar(200) not null,
 		CommandText nvarchar(MAX) not null,
 		UpdatedOn datetime not null,
@@ -31,15 +31,15 @@ go
 -- Called by [SchemaValidation].[p_Set_Schema_Validation].
 --     EXEC [SchemaValidation].[p_Set_Schema_Validation_Expected_Results_to_Current] @Schema_Validation_Code='IF01'
 create or alter proc [SchemaValidation].[p_SetExpectedResultsToLatest]
-	@SchemaValidationRuleCode varchar(50)
+	@RuleCode varchar(50)
 as
 	set nocount on;
 
-	update [SchemaValidation].[SchemaValidationRule]
+	update [SchemaValidation].[Rule]
 	set ExpectedResults = LatestResults,
 		UpdatedOn = SYSDATETIME(),
 		UpdatedBy = SYSTEM_USER
-	where SchemaValidationRuleCode = @SchemaValidationRuleCode;
+	where RuleCode = @RuleCode;
 go
 
 -- ----------------------------------------------------------------------------
@@ -57,24 +57,24 @@ end;
 go
 
 -- ----------------------------------------------------------------------------
--- Inserts or updates [SchemaValidation].[SchemaValidationRule] table.
+-- Inserts or updates [SchemaValidation].[Rule] table.
 create or alter proc [SchemaValidation].[p_SetRule]
-	@SchemaValidationRuleCode varchar(50),
+	@RuleCode varchar(50),
 	@FailureMessage varchar(200),
 	@CommandText nvarchar(MAX)
 as
 	set nocount on;
 
-	update [SchemaValidation].[SchemaValidationRule]
+	update [SchemaValidation].[Rule]
 	set FailureMessage = @FailureMessage, 
 		CommandText = @CommandText, 
 		UpdatedOn = SYSDATETIME(),
 		UpdatedBy = SYSTEM_USER
-	where SchemaValidationRuleCode = @SchemaValidationRuleCode;
+	where RuleCode = @RuleCode;
 
 	if @@ROWCOUNT = 0 begin;
-		insert [SchemaValidation].[SchemaValidationRule] (
-			SchemaValidationRuleCode,
+		insert [SchemaValidation].[Rule] (
+			RuleCode,
 			FailureMessage,
 			CommandText,
 			StatusID,
@@ -82,7 +82,7 @@ as
 			UpdatedOn
 		)
 		values (
-			@SchemaValidationRuleCode,
+			@RuleCode,
 			@FailureMessage,
 			@CommandText,
 			[SchemaValidation].[f_StatusID]('TO-DO'),
@@ -98,7 +98,7 @@ go
 -- Called by the db trigger and [SchemaValidation].[p_Get_Schema_Validation_Details].
 --		EXEC @Status_ID = [SchemaValidation].[p_ValidateRule] @Schema_Validation_Code='PK-1', @Schema_Change_ID=NULL
 create or alter proc [SchemaValidation].[p_ValidateRule]
-	@SchemaValidationRuleCode varchar(50),
+	@RuleCode varchar(50),
 	@SchemaChangeEventID int = NULL -- NULL means no event data
 as
 	set nocount on;
@@ -118,8 +118,8 @@ as
 		@CommandText = CommandText,
 		@ExpectedResults = ExpectedResults,
 		@ExistingStatusID = StatusID
-	from [SchemaValidation].[SchemaValidationRule]
-	where SchemaValidationRuleCode = @SchemaValidationRuleCode;
+	from [SchemaValidation].[Rule]
+	where RuleCode = @RuleCode;
 
 	if @ExistingStatusID <> [SchemaValidation].[f_StatusID]('DISABLED')
 		return @ExistingStatusID;
@@ -142,7 +142,7 @@ as
 		[SchemaValidation].[f_StatusID]('SUCCESS')
 	);
 
-	update [SchemaValidation].[SchemaValidationRule]
+	update [SchemaValidation].[Rule]
 	set StatusID = @NewStatusID,
 		LatestResults = @ResultsOutside,
 		ElapsedMilliseconds = DATEDIFF(millisecond, @ValidationStart, SYSDATETIME()),
@@ -154,7 +154,7 @@ as
 		),
 		ValidatedOn = sysdatetime(),
 		ValidatedBy = SYSTEM_USER
-	where SchemaValidationRuleCode = @SchemaValidationRuleCode;
+	where RuleCode = @RuleCode;
 
 	return @NewStatusID;
 go
@@ -186,16 +186,16 @@ as
 	end catch;
 
 	declare @SchemaChange varchar(max) = (select SchemaChange from @SchemaChangeTable);
-	declare @SchemaValidationRuleCode varchar(50);
+	declare @RuleCode varchar(50);
 	declare @FailureMessage varchar(200);
 	declare @StatusID tinyint;
 	declare @LoopStarted datetime = SYSDATETIME();
 
-	declare @Rules table (Enum int identity, SchemaValidationRuleCode varchar(50));
+	declare @Rules table (Enum int identity, RuleCode varchar(50));
 
-	insert @Rules (SchemaValidationRuleCode)
-	select SchemaValidationRuleCode 
-	from [SchemaValidation].[SchemaValidationRule]
+	insert @Rules (RuleCode)
+	select RuleCode 
+	from [SchemaValidation].[Rule]
 	where StatusID <> [SchemaValidation].[f_StatusID]('DISABLED')
 	order by ValidatedOn desc;
 
@@ -203,20 +203,20 @@ as
 
 	while @ThisEnum > 0 begin;
 		begin try;
-			select @SchemaValidationRuleCode = SchemaValidationRuleCode from @Rules where Enum = @ThisEnum;
+			select @RuleCode = RuleCode from @Rules where Enum = @ThisEnum;
 
 			select
 				@FailureMessage = FailureMessage
-			from [SchemaValidation].[SchemaValidationRule]
-			where SchemaValidationRuleCode = @SchemaValidationRuleCode;
+			from [SchemaValidation].[Rule]
+			where RuleCode = @RuleCode;
 
-			EXEC @StatusID = [SchemaValidation].[p_ValidateRule] @SchemaValidationRuleCode, @SchemaChangeEventID;
+			EXEC @StatusID = [SchemaValidation].[p_ValidateRule] @RuleCode, @SchemaChangeEventID;
 
 			if @StatusID = [SchemaValidation].[f_StatusID]('FAILURE') begin
 				print CONCAT(
 					'WARNING: ', @FailureMessage, 
 					@SchemaChange, 
-					'; For more, EXEC [SchemaValidation].[p_GetDetails] ''', @SchemaValidationRuleCode, ''';'
+					'; For more, EXEC [SchemaValidation].[p_GetDetails] ''', @RuleCode, ''';'
 				);
 			end;
 		end try
@@ -276,26 +276,26 @@ go
 -- Depends on [SchemaValidation].[p_Run_Schema_Validation] and [SchemaValidation].[p_Get_Schema_Validation_Table].
 --		EXEC [SchemaValidation].[p_Get_Schema_Validation_Details] 1
 create or alter proc [SchemaValidation].[p_GetDetails]
-	@SchemaValidationRuleCode varchar(50)
+	@RuleCode varchar(50)
 as
 	set nocount on;
 
 	select s.StatusName, r.CommandText
-	from [SchemaValidation].[SchemaValidationRule] r
+	from [SchemaValidation].[Rule] r
 	left join (values 
 		('TO-DO', 1), 
 		('SUCCESS', 2), 
 		('FAILURE', 3), 
 		('DISABLED', 4)
 	) s (StatusName, StatusID) on s.StatusID = r.StatusID
-	WHERE SchemaValidationRuleCode = @SchemaValidationRuleCode;
+	WHERE RuleCode = @RuleCode;
 
 	declare @ExpectedResults XML;
 	declare @LatestResults XML;
 
 	select @ExpectedResults = ExpectedResults, @LatestResults = LatestResults
-	from [SchemaValidation].[SchemaValidationRule]
-	WHERE SchemaValidationRuleCode = @SchemaValidationRuleCode
+	from [SchemaValidation].[Rule]
+	WHERE RuleCode = @RuleCode
 
 	exec [SchemaValidation].[p_GetTableFromXML] 'Expected Results', @ExpectedResults;
 
@@ -307,10 +307,10 @@ as
 		('Check the status. It might now be in success.'),
 		('If not, you can try to fix the issue,'),
 		('rerun the rule and check these results again.'),
-		('    EXEC [SchemaValidation].[p_ValidateRule] ''' + @SchemaValidationRuleCode + ''';'),
-		('    EXEC [SchemaValidation].[p_GetDetails] ''' + @SchemaValidationRuleCode + ''';'),
+		('    EXEC [SchemaValidation].[p_ValidateRule] ''' + @RuleCode + ''';'),
+		('    EXEC [SchemaValidation].[p_GetDetails] ''' + @RuleCode + ''';'),
 		('If the latest results are correct, run this:'),
-		('    EXEC [SchemaValidation].[p_SetExpectedResultsToLatest] ''' + @SchemaValidationRuleCode + ''';')
+		('    EXEC [SchemaValidation].[p_SetExpectedResultsToLatest] ''' + @RuleCode + ''';')
 	) t (Instructions);
 go
 
