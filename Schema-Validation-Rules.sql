@@ -1,5 +1,5 @@
 -- default date
-exec [SchemaChange].[p_SetSchemaValidationRule]
+exec [SchemaValidation].[p_SetRule]
 'DEFAULT-DATE-1',
 'Default dates must be UTC',
 'select TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, COLUMN_DEFAULT from INFORMATION_SCHEMA.COLUMNS
@@ -7,7 +7,7 @@ where DATA_TYPE = ''datetime'' and COLUMN_DEFAULT not like ''%utc%''';
 go
 
 -- default
-exec [SchemaChange].[p_SetSchemaValidationRule]
+exec [SchemaValidation].[p_SetRule]
 'DEFAULT-NAMING-1',
 'Defaults must be named',
 'select 
@@ -20,7 +20,7 @@ go
 
 --\/*
 	-- index
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'UNIQUE-INDEX-1',
 	'Use CREATE UNIQUE INDEX instead of adding a constraint to a table',
 	'select * from INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
@@ -28,7 +28,7 @@ go
 	go
 
 	-- index
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'PK-1',
 	'Table should have a primary key and a clustered index on the same column',
 	'select 
@@ -44,7 +44,7 @@ go
 	go
 
 	-- index
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'PK-2',
 	'The primary key should be on 1 column thats an identity and named after the table, plus "Id"',
 	'select SCHEMA_NAME(t.[schema_id]) + ''.'' + t.[name] as Table_Name
@@ -64,7 +64,7 @@ go
 	go
 
 	-- FK
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'FK-1',
 	'Foreign keys must be enforced',
 	'select OBJECT_SCHEMA_NAME(c.[object_id]) + ''.'' + OBJECT_NAME(c.[object_id]) as Table_Name, c.[name] as Column_Name
@@ -83,7 +83,7 @@ go
 	go
 
 	-- default date
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'DEFAULT-DATE-2',
 	'CreatedDt and UpdatedDt must have GETUTCDATE() as the default',
 	'select 
@@ -99,7 +99,7 @@ go
 	go
 
 	-- table naming
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'TABLE-NAMING-1',
 	'The names of the base and history table should match',
 	'select 
@@ -112,7 +112,7 @@ go
 	go
 
 	-- table naming
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'TABLE-NAMING-2',
 	'The schema of the history table should match the base with "History" as a prefix. The exception is "History" matches "Core"',
 	'select 
@@ -125,7 +125,7 @@ go
 	go
 
 	-- index
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'INDEX-1',
 	'Foreign key columns should be indexed',
 	'select OBJECT_SCHEMA_NAME(fkc.parent_object_id) + ''.'' + OBJECT_NAME(fkc.parent_object_id) as Table_Name,
@@ -136,7 +136,7 @@ go
 	go
 
 	-- table
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'TABLE-1',
 	'Table should be a system versioned temporal table',
 	'select SCHEMA_NAME([schema_id]) + ''.'' + [name] as Table_Name
@@ -146,7 +146,7 @@ go
 	go
 
 	-- FK
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'FK-2',
 	'Foreign keys should reference the primary key',
 	'select 
@@ -174,7 +174,7 @@ go
 	go
 
 	-- FK
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'FK-3',
 	'Duplicate foreign key',
 	'select 
@@ -190,7 +190,7 @@ go
 	go
 
 	-- index
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'INDEX-2',
 	'Duplicate index',
 	'select 
@@ -219,7 +219,7 @@ go
 	go
 
 	-- SQL code
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'SQL-CODE-1',
 	'Select-star used in proc',
 	'select distinct OBJECT_SCHEMA_NAME(object_id) + ''.'' + OBJECT_NAME(object_id) as Table_Name
@@ -229,7 +229,7 @@ go
 	go
 
 	-- tables
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'TABLE-2',
 	'SET LOCK_ESCALATION = AUTO for partitioned tables',
 	'select OBJECT_SCHEMA_NAME(object_id) + ''.'' + name as Table_Name
@@ -239,7 +239,7 @@ go
 	go
 
 	-- index prefix
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'INDEX-PREFIX-1',
 	'Incorrect prefix on index name',
 	'select 
@@ -262,7 +262,7 @@ go
 	go
 
 	-- index naming
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'INDEX-NAMING-1',
 	'Use Composite in the name of indexes with multiple columns',
 	'select OBJECT_SCHEMA_NAME(object_id) + ''.'' + OBJECT_NAME(object_id) as Table_Name, name
@@ -282,7 +282,7 @@ go
 	go
 
 	-- index
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'INDEX-4',
 	'Indexes that include PartitionKey must be partitioned',
 	'select OBJECT_SCHEMA_NAME(i.[object_id]) + ''.'' + OBJECT_NAME(i.[object_id]) as table_name, i.[name]
@@ -293,7 +293,7 @@ go
 	go
 
 	-- SQL Code
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'SQL-CODE-2',
 	'Joins on the primary key of a partitioned table must include PartitionKey',
 	'select distinct OBJECT_SCHEMA_NAME(d.[object_id]) + ''.'' + OBJECT_NAME(d.[object_id]) as Table_Name
@@ -305,7 +305,7 @@ go
 	go
 
 	-- table
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'TABLE-3',
 	'All tables below Entity should be partitioned',
 	'select distinct OBJECT_SCHEMA_NAME(parent_object_id) + ''.'' + OBJECT_NAME(parent_object_id) as Table_Name
@@ -316,7 +316,7 @@ go
 	go
 
 	-- index
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'INDEX-3',
 	'Indexes on FKs to partitioned tables must also have PartitionKey',
 	'select 
@@ -337,7 +337,7 @@ go
 	order by 1, 2';
 	go
 
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'PREFIX-1',
 	'Incorrect prefix on routine or constraint',
 	'select OBJECT_SCHEMA_NAME(o.object_id) + ''.'' + o.name as object_name
@@ -356,7 +356,7 @@ go
 		and OBJECT_SCHEMA_NAME(object_id) not in (''dbo'', ''tools'')'
 	go
 
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'CONSTRAINT-NAMING-1',
 	'Constraint name must include the schema name unless it is Core',
 	'select OBJECT_SCHEMA_NAME([object_id]) + ''.'' + name as [object_name] from sys.objects
@@ -365,7 +365,7 @@ go
 		and name not like ''%[_]'' + OBJECT_SCHEMA_NAME([object_id]) + ''[_]%'''
 	go
 
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'INDEX-NAMING-2',
 	'Index name must include the schema name unless it is Core',
 	'select OBJECT_SCHEMA_NAME([object_id]) + ''.'' + [name] as index_name from sys.indexes
@@ -373,7 +373,7 @@ go
 		and [name] not like ''%[_]'' + OBJECT_SCHEMA_NAME([object_id]) + ''[_]%'''
 	go
 
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'CONSTRAINT-NAMING-2',
 	'Constraint name must include the table name',
 	'select OBJECT_SCHEMA_NAME([object_id]) + ''.'' + [name] as [object_name] from sys.objects
@@ -382,7 +382,7 @@ go
 		and [name] not like ''%[_]'' + OBJECT_NAME(parent_object_id) + ''%'''
 	go
 
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'INDEX-NAMING-3',
 	'Index name must include the table name',
 	'select OBJECT_SCHEMA_NAME([object_id]) + ''.'' + [name] as index_name from sys.indexes
@@ -390,7 +390,7 @@ go
 		and [name] not like ''%[_]'' + OBJECT_NAME([object_id]) + ''%'''
 	go
 
-	exec [SchemaChange].[p_SetSchemaValidationRule]
+	exec [SchemaValidation].[p_SetRule]
 	'UNIQUE-INDEX-2',
 	'Tables should have a unique index in addition to the PK',
 	'select OBJECT_SCHEMA_NAME([object_id]) + ''.'' + [name] as table_name from sys.tables
