@@ -10,11 +10,20 @@ This repository is specifically for Microsoft SQL Server. It contains 4 Transact
 - **Schema-Validation-Rules.sql** - Inserts the rules used for the validation process.
 
 # Installation
+Before we get to writing rules and handling violations, let's try to get this thing running.
 ## Step 1 - Schema-Change-Storage.sql
 Typically, the schema changes are stored in a single database such as Utility or Tools. In that case, the Schema-Change-Storage.sql script is executed in only that database. However, it's also possible to have each database store their own schema changes. In that case, changes are not combined into a single database.
 
 # Potential Instalation Issues
-- If 
+- If there's more than one database that stores schema changes and Schema-Change-Transmission.sql is executed on a database that does not store schema changes, then an error occurs. That's because the trigger doesn't know where to send changes. Either
+
+# Uninstall
+Here's what to drop:
+- Database level triggers - If you're only uninstalling validation, don't drop these triggers. For each database in SSMS, navigate to Programmability > Database Triggers. The trigger is named "t_SchemaChange".
+- SchemaValidation schema - All of the validation is in this schema. For each database, drop the procs, tables and 
+
+
+- n any schema. There's only one database level trigger. 
 
 The Schema_Changes.sql script is for tracking schema or DDL changes. for searching, repeating and validating. DDL shanges are also called schema changes. They're different from table selects, inserts, updates and deletes. They typically include CREATE, ALTER or DROP.
 ## Installation
