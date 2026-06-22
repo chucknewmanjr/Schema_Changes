@@ -20,7 +20,7 @@ Typically, the schema changes are stored in a single database such as Utility or
 # Uninstall
 Here's what to drop:
 - Database level triggers - If you're only uninstalling validation, don't drop these triggers. For each database in SSMS, navigate to Programmability > Database Triggers. The trigger is named "t_SchemaChange".
-- SchemaValidation schema - All of the validation is in this schema. For each database, drop the procs, tables and 
+- SchemaValidation schema - All of the validation is in this schema. For each database, drop the procs (6), table (1) and scalar function (1). 
 
 
 - n any schema. There's only one database level trigger. 
