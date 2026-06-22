@@ -1,5 +1,5 @@
 # Schema-Changes
-This repository contains 4 Transact-SQL scripts. When used together, they do 2 things:
+This repository is specifically for Microsoft SQL Server. It contains 4 Transact-SQL scripts. When used together, they do 2 things:
 - They store all executed DDL instructions, which are also called schema changes.
 - And they validate schema changes.
 
@@ -10,7 +10,10 @@ This repository contains 4 Transact-SQL scripts. When used together, they do 2 t
 - **Schema-Validation.sql** - Creates a table, procs and such for performing validations.
 - **Schema-Validation-Rules.sql** - Inserts the rules used for the validation process.
 
-# sdf
+# Installation
+The installation requires some planning. Typically, the schema changes are stored in a single database such as Utility or Tools. In that case, the Schema-Change-Storage.sql script is executed in only that database. However, it's also possible to have each database store their own schema changes.
+
+## Step 1 - Schema-Change-Storage.sql
 
 
 
