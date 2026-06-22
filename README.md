@@ -11,9 +11,10 @@ This repository is specifically for Microsoft SQL Server. It contains 4 Transact
 
 # Installation
 ## Step 1 - Schema-Change-Storage.sql
-The installation requires some planning. Typically, the schema changes are stored in a single database such as Utility or Tools. In that case, the Schema-Change-Storage.sql script is executed in only that database. However, it's also possible to have each database store their own schema changes. In that case, changes are not combined into a single database.
+Typically, the schema changes are stored in a single database such as Utility or Tools. In that case, the Schema-Change-Storage.sql script is executed in only that database. However, it's also possible to have each database store their own schema changes. In that case, changes are not combined into a single database.
 
-
+# Potential Instalation Issues
+- If 
 
 The Schema_Changes.sql script is for tracking schema or DDL changes. for searching, repeating and validating. DDL shanges are also called schema changes. They're different from table selects, inserts, updates and deletes. They typically include CREATE, ALTER or DROP.
 ## Installation
