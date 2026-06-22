@@ -1,159 +1,206 @@
+-- ----------------------------------------------------------------------------
+-- ===== SCHEMA CHANGE STORAGE - INSTRUCTIONS ===== --
+-- Run this script in the database you want schema changes stored.
+-- It can be a single database or multiple.
+-- If it's single, all databases transmit their changes there.
+-- If it's multiple, then each one stores only its own changes.
+-- ----------------------------------------------------------------------------
+
 /*
-	disable trigger [tr_Schema_Change] on database;
-	-- enable trigger [tr_Schema_Change] on database;
-	drop trigger if exists [tr_Schema_Change] on database;
-	drop view if exists [Tools].[vw_Schema_Change];
-	-- DANGER: do not drop the Tools.Schema_Change tables. Loss of data!
+	-- ===== Rollback changes ===== --
+	disable trigger [t_SchemaChange] on database;
+	-- enable trigger [t_SchemaChange] on database;
+	drop trigger if exists [t_SchemaChange] on database;
+	drop view if exists [SchemaChange].[v_SchemaChange];
+	drop proc if exists [SchemaChange].[p_FindSchemaChange];
+	drop proc if exists [SchemaChange].[p_SaveSchemaChange];
+	-- DANGER: do not drop the SchemaChange.SchemaChange tables. Loss of data!
 */
 
 -- disable the trigger so that it doesn't fire while running this script.
-if exists (select * from sys.triggers where name = 'tr_Schema_Change' and parent_class_desc = 'DATABASE')
-	disable trigger [tr_Schema_Change] on database;
+if exists (select * from sys.triggers where name = 't_SchemaChange' and parent_class_desc = 'DATABASE')
+	disable trigger [t_SchemaChange] on database;
 
-if SCHEMA_ID('Tools') is null exec ('create schema [Tools] authorization [dbo]');
+if SCHEMA_ID('SchemaChange') is null exec ('create schema [SchemaChange] authorization [dbo]');
 
-if OBJECT_ID('[Tools].[Schema_Change_User]') is null
-	create table [Tools].[Schema_Change_User] (
-		Schema_Change_User_ID int not null identity constraint PK_Tools_Schema_Change_User primary key,
-		Login_Name sysname null,
-		[User_Name] sysname null,
-		constraint UX_Tools_Schema_Change_User unique (Login_Name, [User_Name])
+if OBJECT_ID('[SchemaChange].[SchemaChangeUser]') is null
+	create table [SchemaChange].[SchemaChangeUser] (
+		SchemaChangeUserID int not null identity constraint PK_SchemaChange_SchemaChangeUser primary key,
+		LoginName sysname not null,
+		UserName sysname not null,
+		constraint UX_SchemaChange_SchemaChangeUser unique (LoginName, UserName)
 	);
 
-if OBJECT_ID('[Tools].[Schema_Change_Object]') is null
-	create table [Tools].[Schema_Change_Object] (
-		Schema_Change_Object_ID int not null identity constraint PK_Tools_Schema_Change_Object primary key,
-		[Schema_Name] sysname null,
-		[Object_Name] sysname null,
-		constraint UX_Tools_Schema_Change_Object unique ([Schema_Name], [Object_Name])
+if OBJECT_ID('[SchemaChange].[SchemaChangeObject]') is null
+	create table [SchemaChange].[SchemaChangeObject] (
+		SchemaChangeObjectID int not null identity constraint PK_SchemaChange_SchemaChangeObject primary key,
+		ServerName sysname not null,
+		DatabaseName sysname not null,
+		ObjectName sysname not null,
+		constraint UX_SchemaChange_SchemaChangeObject unique (ServerName, DatabaseName, ObjectName)
 	);
 
-if OBJECT_ID('[Tools].[Schema_Change]') is null
-	create table [Tools].[Schema_Change] (
-		Schema_Change_ID int not null identity
-			constraint PK_Tools_Schema_Change primary key,
-		Trigger_Event_Type int null,
-		Post_Time datetime null, -- local
-		Schema_Change_User_ID int null
-			constraint FK_Tools_Schema_Change_User_ID
-			references [Tools].[Schema_Change_User] (Schema_Change_User_ID),
-		Schema_Change_Object_ID int null
-			constraint FK_Tools_Schema_Change_Object_ID
-			references [Tools].[Schema_Change_Object] (Schema_Change_Object_ID),
-		Alter_Table_Action_List xml null,
-		Command_Text nvarchar(MAX) null
+if OBJECT_ID('[SchemaChange].[SchemaChangeEvent]') is null
+	create table [SchemaChange].[SchemaChangeEvent] (
+		SchemaChangeEventID int not null identity
+			constraint PK_SchemaChange_SchemaChange primary key,
+		TriggerEventType int not null,
+		PostTime datetime2(2) not null, -- local
+		SchemaChangeUserID int not null
+			constraint FK_SchemaChange_SchemaChangeUserID
+			references [SchemaChange].[SchemaChangeUser] (SchemaChangeUserID),
+		SchemaChangeObjectID int not null
+			constraint FK_SchemaChange_SchemaChangeObjectID
+			references [SchemaChange].[SchemaChangeObject] (SchemaChangeObjectID),
+		AlterTableActionList xml not null,
+		CommandText nvarchar(MAX)
 	);
 go
 
--- ----------------------------------------------------------------
--- Called by the [Tools].[vw_Schema_Validation] view.
---		SELECT TOP 100 * FROM [Tools].[vw_Schema_Change] ORDER BY 1 DESC
-create or alter view [Tools].[vw_Schema_Change] as
+-- ----------------------------------------------------------------------------
+-- Called by the [SchemaChange].[v_SchemaValidation] view.
+--		SELECT TOP 5 * FROM [SchemaChange].[v_SchemaChange] ORDER BY 1 DESC
+create or alter view [SchemaChange].[v_SchemaChange] as
 	SELECT
-		e.Schema_Change_ID,
-		tet.[type_name],
-		e.Post_Time,
-		u.Login_Name,
-		u.[User_Name],
-		o.[Schema_Name] + '.' + o.[Object_Name] as [Object_Name],
-		e.Command_Text,
-		e.Alter_Table_Action_List
-	FROM [Tools].[Schema_Change] e
-	left join sys.trigger_event_types tet on e.Trigger_Event_Type = tet.[type]
-	left join [Tools].[Schema_Change_User] u on e.Schema_Change_User_ID = u.Schema_Change_User_ID
-	left join [Tools].[Schema_Change_Object] o on e.Schema_Change_Object_ID = o.Schema_Change_Object_ID
+		e.SchemaChangeEventID,
+		e.PostTime,
+		u.LoginName,
+		u.UserName,
+		tet.[type_name] as TriggerEventTypeName,
+		o.DatabaseName,
+		o.ObjectName,
+		e.CommandText,
+		e.AlterTableActionList
+	FROM [SchemaChange].[SchemaChangeEvent] e
+	join sys.trigger_event_types tet on e.TriggerEventType = tet.[type]
+	join [SchemaChange].[SchemaChangeUser] u on e.SchemaChangeUserID = u.SchemaChangeUserID
+	join [SchemaChange].[SchemaChangeObject] o on e.SchemaChangeObjectID = o.SchemaChangeObjectID;
 go
 
-create or alter proc [Tools].[P_Find_Schema_Change] @Saught varchar(MAX) as
-	SELECT 
-		Post_Time, 
-		[type_name], 
-		Login_Name, 
-		[Object_Name], 
-		Command_Text, 
-		Alter_Table_Action_List
-	FROM [Tools].[vw_Schema_Change]
-	where Command_Text like '%' + REPLACE(REPLACE(@Saught, '[', '[[]'), '_', '[_]') + '%'
-		or [type_name] = @Saught
-		or Login_Name = @Saught
-		or [Object_Name] = @Saught
-	order by Schema_Change_ID desc;
+-- ----------------------------------------------------------------------------
+create or ALTER proc [SchemaChange].[p_StatusReport] as
+	select top 0 db_id() as database_id, * into #triggers from sys.triggers;
+
+	insert into #triggers exec sp_msforeachdb N'use ?; select db_id(), * from sys.triggers;';
+
+	select top 0 db_id() as database_id, * into #procedures from sys.procedures;
+
+	insert into #procedures exec sp_msforeachdb N'use ?; select db_id(), * from sys.procedures;';
+
+	declare @StorageCount int = (
+		select count(*)
+		from #procedures
+		where name = 'p_SaveSchemaChange'
+			and OBJECT_SCHEMA_NAME(object_id, database_id) = 'SchemaChange'
+	);
+
+	select d.name as [Database_Name], 
+		case t.is_disabled
+			when 0 then 'Active'
+			when 1 then 'Deactivated'
+			else 'Not Installed'
+			end as Transmits,
+		case
+			when s.database_id is null then ''
+			when @StorageCount = 1 then 'Single'
+			else 'Multiple'
+			end as Stores,
+		iif(v.name is null, '', 'Yes') as [Validation]
+	from sys.databases d
+	left join #triggers t 
+		on t.database_id = d.database_id 
+		and t.name = 't_SchemaChange'
+		and t.parent_class_desc = 'DATABASE'
+	left join #procedures s 
+		on s.database_id = d.database_id 
+		and s.name = 'p_SaveSchemaChange'
+		and OBJECT_SCHEMA_NAME(s.object_id, s.database_id) = 'SchemaChange'
+	left join #procedures v
+		on v.database_id = d.database_id 
+		and v.name = 'p_ValidateSchema'
+		and OBJECT_SCHEMA_NAME(v.object_id, v.database_id) = 'SchemaValidation'
+	where d.owner_sid <> 0x01
+	order by d.name;
 go
 
--- ----------------------------------------------------------------
--- This trigger fires for any change to the schema in this database.
--- It does 2 things:
--- 1 - Records the schema change
--- 2 - Run the validation proc if it exists
-create or alter trigger [tr_Schema_Change] on database after DDL_DATABASE_LEVEL_EVENTS as
+-- ----------------------------------------------------------------------------
+-- This proc gets called by a database trigger in other databases.
+-- Those triggers are fired by schema changes.
+-- This proc does 2 things:
+-- 1 - Records the schema change event.
+-- 2 - Run the validation proc if it exists.
+create or alter proc [SchemaChange].[p_SaveSchemaChange] 
+	@DatabaseName sysname,
+	@EventData xml
+as
 	set nocount on;
 
 	declare
-		@Event_Data XML = EVENTDATA(),
-		@Event_Type_Name nvarchar(64),
-		@Post_Time datetime,
-		@Login_Name sysname,
-		@User_Name sysname,
-		@Schema_Name sysname,
-		@Object_Name sysname,
-		@Alter_Table_Action_List xml,
-		@Command_Text nvarchar(MAX);
+		@TriggerEventTypeName nvarchar(64),
+		@PostTime datetime2(2),
+		@LoginName sysname,
+		@UserName sysname,
+		@SchemaName sysname,
+		@ObjectName sysname,
+		@AlterTableActionList xml,
+		@CommandText nvarchar(MAX);
 
 	select
-		@Event_Type_Name = c.value('EventType[1]', 'nvarchar(64)'),
-		@Post_Time = c.value('PostTime[1]', 'datetime'),
-		@Login_Name = c.value('LoginName[1]', 'sysname'),
-		@User_Name = c.value('UserName[1]', 'sysname'),
-		@Schema_Name = c.value('SchemaName[1]', 'sysname'),
-		@Object_Name = c.value('ObjectName[1]', 'sysname'),
-		@Alter_Table_Action_List = c.query('AlterTableActionList/*'),
-		@Command_Text = c.value('(TSQLCommand/CommandText)[1]', 'nvarchar(MAX)')
-	from @Event_Data.nodes('EVENT_INSTANCE') t(c);
+		@TriggerEventTypeName = c.value('EventType[1]', 'nvarchar(64)'),
+		@PostTime = c.value('PostTime[1]', 'datetime2(2)'),
+		@LoginName = c.value('LoginName[1]', 'sysname'),
+		@UserName = c.value('UserName[1]', 'sysname'),
+		@SchemaName = c.value('SchemaName[1]', 'sysname'),
+		@ObjectName = c.value('ObjectName[1]', 'sysname'),
+		@AlterTableActionList = c.query('AlterTableActionList/*'),
+		@CommandText = c.value('(TSQLCommand/CommandText)[1]', 'nvarchar(MAX)')
+	from @EventData.nodes('EVENT_INSTANCE') t(c);
 
-	insert [Tools].[Schema_Change_User] (Login_Name, [User_Name])
-	select @Login_Name, @User_Name
+	set @ObjectName = CONCAT(@SchemaName + '.', @ObjectName);
+
+	insert [SchemaChange].[SchemaChangeUser] (LoginName, UserName)
+	select @LoginName, @UserName
 	except
-	select Login_Name, [User_Name] from [Tools].[Schema_Change_User] WITH (HOLDLOCK, UPDLOCK);
+	select LoginName, UserName 
+	from [SchemaChange].[SchemaChangeUser] WITH (HOLDLOCK, UPDLOCK); 
+	-- HOLDLOCK and UPDLOCK prevent deadlocks when using INSERT EXCEPT.
 
-	insert [Tools].[Schema_Change_Object] ([Schema_Name], [Object_Name])
-	select @Schema_Name, @Object_Name
+	insert [SchemaChange].[SchemaChangeObject] (ServerName, DatabaseName, ObjectName)
+	select @@SERVERNAME, @DatabaseName, @ObjectName
 	except
-	select [Schema_Name], [Object_Name] from [Tools].[Schema_Change_Object] WITH (HOLDLOCK, UPDLOCK);
+	select ServerName, DatabaseName, ObjectName
+	from [SchemaChange].[SchemaChangeObject] WITH (HOLDLOCK, UPDLOCK);
 
-	insert [Tools].[Schema_Change] (
-		Trigger_Event_Type,
-		Post_Time,
-		Schema_Change_User_ID,
-		Schema_Change_Object_ID,
-		Alter_Table_Action_List,
-		Command_Text
+	insert [SchemaChange].[SchemaChangeEvent] (
+		TriggerEventType,
+		PostTime,
+		SchemaChangeUserID,
+		SchemaChangeObjectID,
+		AlterTableActionList,
+		CommandText
 	)
 	select
-		t.[type],
-		@Post_Time,
-		u.Schema_Change_User_ID,
-		o.Schema_Change_Object_ID,
-		@Alter_Table_Action_List,
-		@Command_Text
+		t.[type] as TriggerEventType,
+		@PostTime,
+		u.SchemaChangeUserID,
+		o.SchemaChangeObjectID,
+		@AlterTableActionList,
+		@CommandText
 	from sys.trigger_event_types t
-	cross join [Tools].[Schema_Change_User] u
-	cross join [Tools].[Schema_Change_Object] o
-	where t.[type_name] = @Event_Type_Name
-		and u.Login_Name = @Login_Name and u.[User_Name] = @User_Name
-		and o.[Schema_Name] = @Schema_Name and o.[Object_Name] = @Object_Name;
+	cross join [SchemaChange].[SchemaChangeUser] u
+	cross join [SchemaChange].[SchemaChangeObject] o
+	where t.[type_name] = @TriggerEventTypeName
+		and u.LoginName = @LoginName 
+		and u.UserName = @UserName
+		and o.ServerName = @@SERVERNAME
+		and o.DatabaseName = @DatabaseName
+		and o.ObjectName = @ObjectName;
 
-	declare @Schema_Change_ID int = SCOPE_IDENTITY();
-
-	-- ====================== --
-	-- ===== VALIDATION ===== --
-	declare @Proc_Name nvarchar(MAX) = '[Tools].[p_Validate_Schema]';
-	declare @Instruction nvarchar(MAX) = CONCAT(@Proc_Name, ' ', @Schema_Change_ID);
-
-	if OBJECT_ID(@Proc_Name) is not null exec (@Instruction);
-	-- ====================== --
-	-- ====================== --
+	return SCOPE_IDENTITY();
 go
 
-if exists (select * from sys.triggers where name = 'tr_Schema_Change' and parent_class_desc = 'DATABASE')
-	enable trigger [tr_Schema_Change] on database;
+if exists (select * from sys.triggers where name = 't_SchemaChange' and parent_class_desc = 'DATABASE')
+	enable trigger [t_SchemaChange] on database;
 go
+
+
