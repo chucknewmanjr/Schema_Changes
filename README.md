@@ -1,4 +1,12 @@
-# Schema_Changes
+# Schema-Changes
+This repository contains 4 Transact-SQL scripts. When used together, they do 2 things:
+- They store all executed DDL instructions, which are also called schema changes.
+- And they validate schema changes.
+#Transact-SQL Scripts
+- Schema-Change-Storage.sql - Creates tables, procs and such for storing schema changes. It's typically executed in 1 database. But can be executed in multtiple.
+- Schema-Change-Transmission.sql - Creates a database level trigger that sends info for storage that's about the schema change. It also kicks off the validation process.
+- Schema-Validation.sql - Creates a table, procs and such for performing validations. 
+
 The Schema_Changes.sql script is for tracking schema or DDL changes. for searching, repeating and validating. DDL shanges are also called schema changes. They're different from table selects, inserts, updates and deletes. They typically include CREATE, ALTER or DROP.
 ## Installation
 Executing the **schema-change-database.sql** script on a database sets up that database for storing schema changes. It does that by creating the SchemaChange schema and then creating tables, procs and a view in that schema. 
