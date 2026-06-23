@@ -66,8 +66,10 @@ The Schema-Validation-Rules.sql script is full of good examples. It calls the [S
 The results of executing CommandText is compared to ExpectedResults. If a row is not found in ExpectedResults, then the rule status is set to "FAILURE". 
 
 ### System tables commonly used in rule command text:
-- sys.objects -
-- sys.tables -
+| System Table | System Table |
+| -- | -- |
+| sys.objects | sys.tables |
+
 - sys.columns -
 - INFORMATION_SCHEMA.COLUMNS - 
 - INFORMATION_SCHEMA.TABLE_CONSTRAINTS - 
