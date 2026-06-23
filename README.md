@@ -57,8 +57,15 @@ EXEC [SchemaValidation].[p_GetResults] 'DEFAULT-NAMING-1';
 - **Step 4** - Update the CommandText of the rule to allow more conditions and rerun the rule.
 
 # Writing Schema Validation Rules
-asdf
-### System tables and functions commonly used in rule command text:
+The Schema-Validation-Rules.sql script is full of good examples. It calls the [SchemaValidation].[p_SetRule] proc repeatedly to insert or update rules. That proc takes 3 parameters
+- RuleCode - A Short recognisable text like "DEFAULT-NAMING-1". It must be unique.
+- FailureMessage - The message displayed to the user when the rule is violated.
+- CommandText - SQL instruction that returns a row of useful info if a violation is found.
+
+### How this functions
+The results of executing CommandText is compared to ExpectedResults. If a row is not found in ExpectedResults, then the rule status is set to "FAILURE". 
+
+### System tables commonly used in rule command text:
 - sys.objects -
 - sys.tables -
 - sys.columns -
