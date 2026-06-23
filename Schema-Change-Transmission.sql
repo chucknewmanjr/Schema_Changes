@@ -15,7 +15,7 @@ declare @DatabaseNames table (DatabaseName sysname);
 insert @DatabaseNames 
 select db_name() 
 from sys.procedures 
-where object_id = OBJECT_ID('[SchemaChange].[p_SaveSchemaChange]');
+where object_id = OBJECT_ID('[SchemaChange].[p_Save]');
 
 -- If this database dosn't save schema changes, go check the others.
 if @@ROWCOUNT = 0
@@ -24,7 +24,7 @@ if @@ROWCOUNT = 0
 		use [?]; 
 		select db_name() 
 		from sys.procedures 
-		where object_id = OBJECT_ID(''SchemaChange.p_SaveSchemaChange'');
+		where object_id = OBJECT_ID(''SchemaChange.p_Save'');
 	';
 
 -- This instruction fails if there's more than one.
@@ -41,9 +41,9 @@ on database after DDL_DATABASE_LEVEL_EVENTS
 as
 	declare @DatabaseName sysname = db_name();
 	declare @EventData xml = EVENTDATA();
-	declare @SchemaChangeEventID int;
+	declare @EventID int;
 
-	exec @SchemaChangeEventID = [[DatabaseName]].[SchemaChange].[p_SaveSchemaChange] 
+	exec @EventID = [[DatabaseName]].[SchemaChange].[p_Save] 
 		@DatabaseName=@DatabaseName, 
 		@EventData=@EventData;
 
@@ -52,7 +52,7 @@ as
 	declare @SQLInstruction nvarchar(MAX) = CONCAT(
 		@ProcName, 
 		'' @DatabaseName=''''[DatabaseName]'''','',
-		'' @SchemaChangeEventID='', @SchemaChangeEventID, '';''
+		'' @EventID='', @EventID, '';''
 	);
 
 	if OBJECT_ID(@ProcName) is not null exec (@SQLInstruction);
