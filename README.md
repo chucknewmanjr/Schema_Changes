@@ -4,11 +4,11 @@ This repository is specifically for Microsoft SQL Server. It contains 4 Transact
 - And they validate schema changes.
 
 # Terms
-- **DDL** - Data Definition language statements typically start with CREATE, ALTER and DROP. These are the instructions that make changes the the structure and reutines in a database. Thay're also called schema changes. They don't start with SELECT, INSERT, UPDATE and DELETE.
+- **DDL** - Data Definition language statements typically start with CREATE, ALTER and DROP. These are the instructions that make changes the the structure and routines in a database. They're also called schema changes. They don't start with SELECT, INSERT, UPDATE and DELETE.
 - **Schema** - The word schema has 2 meanings in the context of a database. It means both the structure of the database and a grouping of the objects in a database. For instance, the default schema is "dbo". The scripts in this repo create 2 more schemas named "SchemaChanges" and "SchemaValidation". Any CREATE, ALTER and DROP instructions executed on any of those schemas are considered schema changes.
 
 # Transact-SQL Scripts
-- **Schema-Change-Storage.sql** - Creates tables, procs and such for storing schema changes. It's typically executed in 1 database. But can be executed in multtiple.
+- **Schema-Change-Storage.sql** - Creates tables, procs and such for storing schema changes. It's typically executed in 1 database. But can be executed in multiple.
 - **Schema-Change-Transmission.sql** - Creates a database level trigger that sends info for storage that's about the schema change. It also kicks off the validation process.
 - **Schema-Validation.sql** - Creates a table, procs and such for performing validations.
 - **Schema-Validation-Rules.sql** - Inserts the rules used for the validation process.
@@ -24,7 +24,7 @@ Validation is optional. Execute this script on any database that transmits schem
 ### Step 4 - Schema-Validation-Rules.sql
 This script inserts 30+ rules. Some might be useful to you. These instructions can help you write more.
 
-# Potential Instalation Issues
+# Potential Installation Issues
 - If there's more than one database that stores schema changes and Schema-Change-Transmission.sql is executed on a database that does not store schema changes, then an error occurs. That's because the trigger doesn't know where to send changes. Either install Schema-Change-Storage.sql in the database or uninstall SchemaChange from all but one database. But be careful. Uninstalling SchemaChange might cause a significant data loss.
 - If Schema-Change-Transmission.sql is executed before there's any database to store schema changes, it fails. Run Schema-Change-Storage.sql first.
 - If you run Schema-Change-Storage.sql on a second database, no schema changes will get saved there until you run Schema-Change-Transmission.sql on that same database.
