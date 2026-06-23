@@ -1,4 +1,4 @@
-# Schema-Changes
+ # Schema-Changes
 This repository is specifically for Microsoft SQL Server. It contains 4 Transact-SQL scripts. When used together, they do 2 things:
 - They store all executed DDL instructions, which are also called schema changes.
 - And they validate schema changes.
@@ -14,11 +14,11 @@ Before we get to writing rules and handling violations, let's try to get this th
 ### Step 1 - Schema-Change-Storage.sql
 Typically, the schema changes are stored in a single database such as Utility or Tools. In that case, the Schema-Change-Storage.sql script is executed in only that database. However, it's also possible to have each database store their own schema changes. In that case, changes are not combined into a single database.
 ### Step 2 - Schema-Change-Transmission.sql
-asdf
+Execute this script on each database from which you want schema changes stored. That can include the databases that store changes. If there's more than one database that stores changes, then it con only be executed on those databases.
 ### Step 3 - Schema-Validation.sql
-asdf
+Validation is optional. Execute this script on any database that transmits schema changes. Validation will not occur until rules are inserted.
 ### Step 4 - Schema-Validation-Rules.sql
-adsf
+asdf
 
 ## Installation
 Executing the **schema-change-database.sql** script on a database sets up that database for storing schema changes. It does that by creating the SchemaChange schema and then creating tables, procs and a view in that schema. 
