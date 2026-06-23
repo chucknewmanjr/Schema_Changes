@@ -214,9 +214,8 @@ as
 
 			if @StatusID = [SchemaValidation].[f_StatusID]('FAILURE') begin
 				print CONCAT(
-					'WARNING: ', @FailureMessage, 
-					@SchemaChange, 
-					'; For more, EXEC [SchemaValidation].[p_GetDetails] ''', @RuleCode, ''';'
+					'Schema Validation Rule violation occured: ', @FailureMessage, @SchemaChange, 
+					'; For more, EXEC [SchemaValidation].[p_GetResults] ''', @RuleCode, ''';'
 				);
 			end;
 		end try
@@ -275,12 +274,12 @@ go
 -- Better than SELECT * FROM [SchemaValidation].[vw_Schema_Validation]
 -- Depends on [SchemaValidation].[p_Run_Schema_Validation] and [SchemaValidation].[p_Get_Schema_Validation_Table].
 --		EXEC [SchemaValidation].[p_Get_Schema_Validation_Details] 1
-create or alter proc [SchemaValidation].[p_GetDetails]
+create or alter proc [SchemaValidation].[p_GetResults]
 	@RuleCode varchar(50)
 as
 	set nocount on;
 
-	select s.StatusName, r.CommandText
+	select r.RuleCode, s.StatusName, r.CommandText
 	from [SchemaValidation].[Rule] r
 	left join (values 
 		('TO-DO', 1), 
@@ -288,7 +287,7 @@ as
 		('FAILURE', 3), 
 		('DISABLED', 4)
 	) s (StatusName, StatusID) on s.StatusID = r.StatusID
-	WHERE RuleCode = @RuleCode;
+	WHERE r.RuleCode = @RuleCode;
 
 	declare @ExpectedResults XML;
 	declare @LatestResults XML;
@@ -303,14 +302,19 @@ as
 
 	select *
 	from (values
-		('Later schema changes may have corrected the issue.'),
-		('Check the status. It might now be in success.'),
-		('If not, you can try to fix the issue,'),
-		('rerun the rule and check these results again.'),
-		('    EXEC [SchemaValidation].[p_ValidateRule] ''' + @RuleCode + ''';'),
-		('    EXEC [SchemaValidation].[p_GetDetails] ''' + @RuleCode + ''';'),
-		('If the latest results are correct, run this:'),
-		('    EXEC [SchemaValidation].[p_SetExpectedResultsToLatest] ''' + @RuleCode + ''';')
+		('Later schema changes may have resolved the issue. '),
+		('If the status is SUCCESS, '),
+		('then the issue has been resolved.'),
+		('If the status is FAILURE, you can try 3 things: '),
+		('(1) If none of the latest results are actually issues, '),
+		('    run this:'),
+		('        EXEC [SchemaValidation].[p_SetExpectedResultsToLatest] ''' + @RuleCode + ''';'),
+		('(2) Make additional schema changes '),
+		('    to correct the issue and rerun the rule.'),
+		('        EXEC [SchemaValidation].[p_ValidateRule] ''' + @RuleCode + ''';'),
+		('        EXEC [SchemaValidation].[p_GetResults] ''' + @RuleCode + ''';'),
+		('(3) Update the CommandText of the rule '),
+		('    to allow more conditions and rerun the rule.')
 	) t (Instructions);
 go
 
