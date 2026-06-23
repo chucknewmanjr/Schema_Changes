@@ -99,7 +99,7 @@ go
 --		EXEC @Status_ID = [SchemaValidation].[p_ValidateRule] @Schema_Validation_Code='PK-1', @Schema_Change_ID=NULL
 create or alter proc [SchemaValidation].[p_ValidateRule]
 	@RuleCode varchar(50),
-	@SchemaChangeEventID int = NULL -- NULL means no event data
+	@EventID int = NULL -- NULL means no event data
 as
 	set nocount on;
 
@@ -146,10 +146,10 @@ as
 	set StatusID = @NewStatusID,
 		LatestResults = @ResultsOutside,
 		ElapsedMilliseconds = DATEDIFF(millisecond, @ValidationStart, SYSDATETIME()),
-		SchemaChangeEventID = @SchemaChangeEventID,
+		SchemaChangeEventID = @EventID,
 		LastSuccessfulSchemaChangeEventID = IIF(
 			@NewStatusID = [SchemaValidation].[f_StatusID]('SUCCESS'),
-			ISNULL(@SchemaChangeEventID, LastSuccessfulSchemaChangeEventID),
+			ISNULL(@EventID, LastSuccessfulSchemaChangeEventID),
 			LastSuccessfulSchemaChangeEventID
 		),
 		ValidatedOn = sysdatetime(),
@@ -161,7 +161,7 @@ go
 
 create or alter proc [SchemaValidation].[p_ValidateSchema] 
 	@DatabaseName sysname,
-	@SchemaChangeEventID int
+	@EventID int
 as
 
 	declare @CommandText nvarchar(max) = concat('
@@ -173,7 +173,7 @@ as
 			LoginName, '')''
 		)
 		from [', @DatabaseName, '].[SchemaChange].[v_SchemaChange]
-		where SchemaChangeEventID = ', @SchemaChangeEventID, ';'
+		where EventID = ', @EventID, ';'
 	);
 
 	declare @SchemaChangeTable table (SchemaChange varchar(max));
@@ -210,7 +210,7 @@ as
 			from [SchemaValidation].[Rule]
 			where RuleCode = @RuleCode;
 
-			EXEC @StatusID = [SchemaValidation].[p_ValidateRule] @RuleCode, @SchemaChangeEventID;
+			EXEC @StatusID = [SchemaValidation].[p_ValidateRule] @RuleCode, @EventID;
 
 			if @StatusID = [SchemaValidation].[f_StatusID]('FAILURE') begin
 				print CONCAT(
