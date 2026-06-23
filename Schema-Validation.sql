@@ -210,7 +210,7 @@ as
 			from [SchemaValidation].[Rule]
 			where RuleCode = @RuleCode;
 
-			EXEC @StatusID = [SchemaValidation].[p_ValidateRule] @RuleCode, @EventID;
+			EXEC @StatusID = [SchemaValidation].[p_ValidateRule] @RuleCode=@RuleCode, @EventID=@EventID;
 
 			if @StatusID = [SchemaValidation].[f_StatusID]('FAILURE') begin
 				print CONCAT(
@@ -296,9 +296,9 @@ as
 	from [SchemaValidation].[Rule]
 	WHERE RuleCode = @RuleCode
 
-	exec [SchemaValidation].[p_GetTableFromXML] 'Expected Results', @ExpectedResults;
+	exec [SchemaValidation].[p_GetTableFromXML] @Source='Expected Results', @XML=@ExpectedResults;
 
-	exec [SchemaValidation].[p_GetTableFromXML] 'Latest Results', @LatestResults;
+	exec [SchemaValidation].[p_GetTableFromXML] @Source='Latest Results', @XML=@LatestResults;
 
 	select *
 	from (values
