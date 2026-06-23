@@ -94,8 +94,13 @@ as
 go
 
 -- ----------------------------------------------------------------------------
--- Called by the db trigger and [SchemaValidation].[p_Get_Schema_Validation_Details].
---		EXEC @Status_ID = [SchemaValidation].[p_ValidateRule] @Schema_Validation_Code='PK-1', @Schema_Change_ID=NULL
+-- Called by the [SchemaValidation].[p_ValidateSchema] proc
+-- or by the user after fixing a failure.
+-- It executes single rule from the [SchemaValidation].[Rule] table.
+-- If the results match expectations, then the rule is set to SUCCESS.
+-- The @EventID parameter can be left NULL if it's not known.
+-- It's the EventID from a SchemaChange, which might be in some other database.
+--		EXEC @Status_ID = [SchemaValidation].[p_ValidateRule] @RuleCode='DEFAULT-NAMING-1';
 create or alter proc [SchemaValidation].[p_ValidateRule]
 	@RuleCode varchar(50),
 	@EventID int = NULL -- NULL means no event data
@@ -158,10 +163,16 @@ as
 	return @NewStatusID;
 go
 
+-- ----------------------------------------------------------------------------
+-- Called by the database level trigger in the same database.
+-- It executes each of the rules in the [SchemaValidation].[Rule] table.
+-- There's a time limit on how many it checks.
+-- It starts with the rule that has gone the longest without a check.
 create or alter proc [SchemaValidation].[p_ValidateSchema] 
 	@DatabaseName sysname,
 	@EventID int
 as
+	set nocount on;
 
 	declare @CommandText nvarchar(max) = concat('
 		select concat('' ('', 
@@ -192,11 +203,12 @@ as
 
 	declare @Rules table (Enum int identity, RuleCode varchar(50));
 
+	-- Latest on top. That way, the rule that has gone the longest goes first.
 	insert @Rules (RuleCode)
 	select RuleCode 
 	from [SchemaValidation].[Rule]
 	where StatusID <> [SchemaValidation].[f_StatusID]('DISABLED')
-	order by ValidatedOn desc;
+	order by ValidatedOn desc; 
 
 	declare @ThisEnum int = (select MAX(Enum) from @Rules);
 

@@ -146,6 +146,7 @@ as
 		@AlterTableActionList xml,
 		@CommandText nvarchar(MAX);
 
+	-- Use the node function to parse the event XML.
 	select
 		@TriggerEventTypeName = c.value('EventType[1]', 'nvarchar(64)'),
 		@PostTime = c.value('PostTime[1]', 'datetime2(2)'),
@@ -159,6 +160,7 @@ as
 
 	set @ObjectName = CONCAT(@SchemaName + '.', @ObjectName);
 
+	-- Normalize the data into 3 tables.
 	insert [SchemaChange].[User] (LoginName, UserName)
 	select @LoginName, @UserName
 	except
