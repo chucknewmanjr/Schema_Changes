@@ -78,6 +78,7 @@ go
 
 -- ----------------------------------------------------------------------------
 -- Reports on the status of the schema change and schema validation features.
+--     EXEC [SchemaChange].[p_StatusReport];
 create or ALTER proc [SchemaChange].[p_StatusReport] as
 	select top 0 db_id() as database_id, is_disabled into #triggers from sys.triggers;
 
@@ -126,11 +127,9 @@ create or ALTER proc [SchemaChange].[p_StatusReport] as
 go
 
 -- ----------------------------------------------------------------------------
--- This proc gets called by a database trigger in other databases.
+-- This proc gets called by a database trigger in various databases.
 -- Those triggers are fired by schema changes.
--- This proc does 2 things:
--- 1 - Records the schema change event.
--- 2 - Run the validation proc if it exists.
+-- This proc records the schema change event in a set of tables.
 create or alter proc [SchemaChange].[p_Save] 
 	@DatabaseName sysname,
 	@EventData xml
@@ -201,6 +200,7 @@ as
 	return SCOPE_IDENTITY();
 go
 
+-- re-enable the trigger now that this script is complete.
 if exists (select * from sys.triggers where name = 't_SchemaChange' and parent_class_desc = 'DATABASE')
 	enable trigger [t_SchemaChange] on database;
 go
