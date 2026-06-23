@@ -20,10 +20,6 @@ Validation is optional. Execute this script on any database that transmits schem
 ### Step 4 - Schema-Validation-Rules.sql
 This script inserts 30+ rules. Some might be useful to you. These instructions can help you write more.
 
-
-
-
-
 # Potential Instalation Issues
 - If there's more than one database that stores schema changes and Schema-Change-Transmission.sql is executed on a database that does not store schema changes, then an error occurs. That's because the trigger doesn't know where to send changes. Either install Schema-Change-Storage.sql in the database or uninstall SchemaChange from all but one database. But be careful. Uninstalling SchemaChange might cause a significant data loss.
 - If Schema-Change-Transmission.sql is executed before there's any database to store schema changes, it fails. Run Schema-Change-Storage.sql first.
@@ -33,11 +29,12 @@ This script inserts 30+ rules. Some might be useful to you. These instructions c
 Here's what to drop:
 - Database level triggers - If you're only uninstalling validation, don't drop these triggers. For each database in SSMS, navigate to Programmability > Database Triggers. The trigger is named "t_SchemaChange".
 - SchemaValidation schema - All of the validation is in this schema. For each database, drop the procs (6), table (1) and a scalar function (1). Then drop the schema.
-- SchemaChanges schema - Careful dropping the tables (3) in this schema. It could cause a significant loss of data. Beyond that, drop procs (2) and a view (1). Then you can drop the schema.
+- SchemaChanges schema - Careful dropping the tables (3) in this schema. It could cause a significant loss of data. Beyond that, drop procs (2) and a view (1).
 
 # Schema Changes
 There's a view in the database that stores schema changes. It's called [SchemaChange].[v_SchemaChange]. 
-
+`SELECT TOP (100) * FROM [SchemaChange].[v_SchemaChange] ORDER BY 1 DESC;`
+```SELECT TOP (100) * FROM [SchemaChange].[v_SchemaChange] ORDER BY 1 DESC;```
 
 
 # Notes
