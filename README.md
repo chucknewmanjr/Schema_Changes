@@ -68,11 +68,13 @@ The results of executing CommandText is compared to ExpectedResults. If a row is
 ### System tables commonly used in rule command text:
 | System Table | System Table |
 | -- | -- |
-| sys.objects | sys.tables |
+| sys.objects | INFORMATION_SCHEMA.COLUMNS |
+| sys.tables | INFORMATION_SCHEMA.TABLE_CONSTRAINTS |
+| sys.columns | sys.default_constraints |
+| sys.indexes | sys.foreign_key_columns |
+| sys.index_columns | sys.sql_dependencies |
+| sys.foreign_keys |  |
 
-- sys.columns -
-- INFORMATION_SCHEMA.COLUMNS - 
-- INFORMATION_SCHEMA.TABLE_CONSTRAINTS - 
 - sys.default_constraints -
 - sys.indexes -
 - sys.index_columns -
