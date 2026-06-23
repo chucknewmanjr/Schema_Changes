@@ -71,16 +71,9 @@ The results of executing CommandText is compared to ExpectedResults. If a row is
 | sys.objects | INFORMATION_SCHEMA.COLUMNS |
 | sys.tables | INFORMATION_SCHEMA.TABLE_CONSTRAINTS |
 | sys.columns | sys.default_constraints |
-| sys.indexes | sys.foreign_key_columns |
-| sys.index_columns | sys.sql_dependencies |
-| sys.foreign_keys |  |
-
-- sys.default_constraints -
-- sys.indexes -
-- sys.index_columns -
-- sys.foreign_keys - 
-- sys.foreign_key_columns -
-- sys.sql_dependencies -
+| sys.foreign_keys | sys.foreign_key_columns |
+| sys.indexes | sys.sql_dependencies |
+| sys.index_columns |  |
 
 ### System functions commonly used in rule command text:
 - OBJECT_NAME(object_id)
