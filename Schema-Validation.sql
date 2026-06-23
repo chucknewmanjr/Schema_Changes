@@ -6,15 +6,15 @@ if SCHEMA_ID('SchemaValidation') is null
 
 if OBJECT_ID('[SchemaValidation].[Rule]') is null
 	create table [SchemaValidation].[Rule] (
-		RuleID smallint not null identity
-			constraint PK_SchemaValidation_Rule primary key,
 		RuleCode varchar(50) not null
-			constraint UI_Validation_SchemaValidation_RuleCode unique,
+			constraint PK_Validation_SchemaValidation_RuleCode primary key,
 		FailureMessage varchar(200) not null,
 		CommandText nvarchar(MAX) not null,
 		UpdatedOn datetime not null,
 		UpdatedBy sysname not null,
 		StatusID tinyint not null,
+			constraint CK_SchemaValidation_Rule_StatusID 
+			check (StatusID in (1, 2, 3, 4)),
 		ExpectedResults xml null,
 		LatestResults xml null,
 		ElapsedMilliseconds int null,
@@ -26,10 +26,9 @@ if OBJECT_ID('[SchemaValidation].[Rule]') is null
 go
 
 -- ----------------------------------------------------------------
--- Rather than getting the XML results yourself,
--- this proc gets the current results for you and updates Expected_Results.
--- Called by [SchemaValidation].[p_Set_Schema_Validation].
---     EXEC [SchemaValidation].[p_Set_Schema_Validation_Expected_Results_to_Current] @Schema_Validation_Code='IF01'
+-- This proc replaced ExpectedResults with LatestResults.
+-- This is done by the user if latestResults appear to be better than ExistingResults.
+--     EXEC [SchemaValidation].[p_SetExpectedResultsToLatest] @RuleCode='IF01'
 create or alter proc [SchemaValidation].[p_SetExpectedResultsToLatest]
 	@RuleCode varchar(50)
 as
