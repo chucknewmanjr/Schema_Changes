@@ -13,7 +13,20 @@ This repository is specifically for Microsoft SQL Server. It contains 4 Transact
 Before we get to writing rules and handling violations, let's try to get this thing running.
 ### Step 1 - Schema-Change-Storage.sql
 Typically, the schema changes are stored in a single database such as Utility or Tools. In that case, the Schema-Change-Storage.sql script is executed in only that database. However, it's also possible to have each database store their own schema changes. In that case, changes are not combined into a single database.
-### Step 2 - asdf
+### Step 2 - Schema-Change-Transmission.sql
+asdf
+### Step 3 - Schema-Validation.sql
+asdf
+### Step 4 - Schema-Validation-Rules.sql
+adsf
+
+## Installation
+Executing the **schema-change-database.sql** script on a database sets up that database for storing schema changes. It does that by creating the SchemaChange schema and then creating tables, procs and a view in that schema. 
+
+Executing the **schema-change-trigger.sql** script on a database sets up that databas for spotting schema chantges and requesting to have the change stored. It does that by creating a database trigger. It's different from your usual table trigger. A database must have been selected for storing schema changes before running this script.
+
+Multiple databases can be used for storing schema changes. Here's how that works. When you execute **schema-change-trigger.sql**, it checks if the current database stores schema changes. If it does, then it stores its own schema changes in its own tables. So **schema-change-trigger.sql** can be executed on every database on which **schema-change-database.sql** has been executed. And they all store their own schema changes in their own tables.
+
 
 # Potential Instalation Issues
 - If there's more than one database that stores schema changes and Schema-Change-Transmission.sql is executed on a database that does not store schema changes, then an error occurs. That's because the trigger doesn't know where to send changes. Either install Schema-Change-Storage.sql in the database or uninstall SchemaChange from all but one database. But be careful. Uninstalling SchemaChange might cause a significant data loss.
@@ -26,14 +39,6 @@ Here's what to drop:
 - SchemaValidation schema - All of the validation is in this schema. For each database, drop the procs (6), table (1) and a scalar function (1). Then drop the schema.
 - SchemaChanges schema - Careful dropping the tables (3) in this schema. It could cause a significant loss of data. Beyond that, drop procs (2) and a view (1). Then you can drop the schema.
 
-
-
-## Installation
-Executing the **schema-change-database.sql** script on a database sets up that database for storing schema changes. It does that by creating the SchemaChange schema and then creating tables, procs and a view in that schema. 
-
-Executing the **schema-change-trigger.sql** script on a database sets up that databas for spotting schema chantges and requesting to have the change stored. It does that by creating a database trigger. It's different from your usual table trigger. A database must have been selected for storing schema changes before running this script.
-
-Multiple databases can be used for storing schema changes. Here's how that works. When you execute **schema-change-trigger.sql**, it checks if the current database stores schema changes. If it does, then it stores its own schema changes in its own tables. So **schema-change-trigger.sql** can be executed on every database on which **schema-change-database.sql** has been executed. And they all store their own schema changes in their own tables.
 
 ## Installation Failures
 **schema-change-trigger.sql** looks for the database in which if should store schema changes.
