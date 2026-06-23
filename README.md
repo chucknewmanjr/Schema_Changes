@@ -56,23 +56,30 @@ EXEC [SchemaValidation].[p_GetResults] 'DEFAULT-NAMING-1';
 ```
 - **Step 4** - Update the CommandText of the rule to allow more conditions and rerun the rule.
 
-
 # Writing Schema Validation Rules
 asdf
+### System tables and functions commonly used in rule command text:
+- sys.objects -
+- sys.tables -
+- sys.columns -
+- INFORMATION_SCHEMA.COLUMNS - 
+- INFORMATION_SCHEMA.TABLE_CONSTRAINTS - 
+- sys.default_constraints -
+- sys.indexes -
+- sys.index_columns -
+- sys.foreign_keys - 
+- sys.foreign_key_columns -
+- sys.sql_dependencies -
+
+### System functions commonly used in rule command text:
+- OBJECT_NAME(object_id)
+- OBJECT_SCHEMA_NAME(object_id)
+- SCHEMA_NAME(schema_id)
+- COL_NAME(object_id, column_id)
+- TYPE_NAME(user_type_id)
+- OBJECTPROPERTY(object_id, 'IsTable')
+- COLUMNPROPERTY(object_id, 'ColumnName', 'IsIdentity')
 
 
 
-# Schema Change Requirements
-asdf
 
-# Schema Validation Requirements
-asdf
-
-# future changes
-- the changes should be stored in a separate database on the server. ([Tools])
-- The [Tools].[Schema_Change_Object] table gets a database name column.
-- The db trigger should go into each database that gets tracked. 
-- Those triggers must write the database name into [Tools].[Schema_Change_Object].
-These changes mean this project wont work in azure. I think that's OK since teams usually develop on-prem.
-
-# Change History
