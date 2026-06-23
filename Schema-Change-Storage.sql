@@ -79,20 +79,31 @@ go
 -- ----------------------------------------------------------------------------
 -- Reports on the status of the schema change and schema validation features.
 create or ALTER proc [SchemaChange].[p_StatusReport] as
-	select top 0 db_id() as database_id, * into #triggers from sys.triggers;
+	select top 0 db_id() as database_id, is_disabled into #triggers from sys.triggers;
 
-	insert into #triggers exec sp_msforeachdb N'use ?; select db_id(), * from sys.triggers;';
+	insert into #triggers exec sp_msforeachdb N'use ?; 
+		select db_id(), is_disabled
+		from sys.triggers
+		where name = ''t_SchemaChange'' and parent_class_desc = ''DATABASE'';';
 
-	select top 0 db_id() as database_id, * into #procedures from sys.procedures;
+	select top 0 db_id() as database_id into #procedures from sys.procedures;
 
-	insert into #procedures exec sp_msforeachdb N'use ?; select db_id(), * from sys.procedures;';
+	insert into #procedures 
+	exec sp_msforeachdb N'use ?; 
+		select db_id()
+		from sys.procedures
+		where name = ''p_SaveSchemaChange''
+			and OBJECT_SCHEMA_NAME(object_id) = ''SchemaChange'';';
 
-	declare @StorageCount int = (
-		select count(*)
-		from #procedures
-		where name = 'p_Save'
-			and OBJECT_SCHEMA_NAME(object_id, database_id) = 'SchemaChange'
-	);
+	select top 0 DB_ID() as database_id, [rows] into #partitions from sys.partitions;
+
+	insert #partitions
+	exec sp_MSforeachdb 'use ?; 
+		select DB_ID(), rows 
+		from sys.partitions 
+		where object_id = OBJECT_ID(''SchemaValidation.Rule'') and index_id = 1;';
+
+	declare @StorageCount int = (select count(*) from #procedures);
 
 	select d.name as [Database_Name], 
 		case t.is_disabled
@@ -104,21 +115,12 @@ create or ALTER proc [SchemaChange].[p_StatusReport] as
 			when s.database_id is null then ''
 			when @StorageCount = 1 then 'Single'
 			else 'Multiple'
-			end as Stores,
-		iif(v.name is null, '', 'Yes') as [Validation]
+			end as Storage,
+		isnull(cast(r.[rows] as varchar(50)), '') as Validation_Rule_Count
 	from sys.databases d
-	left join #triggers t 
-		on t.database_id = d.database_id 
-		and t.name = 't_SchemaChange'
-		and t.parent_class_desc = 'DATABASE'
-	left join #procedures s 
-		on s.database_id = d.database_id 
-		and s.name = 'p_Save'
-		and OBJECT_SCHEMA_NAME(s.object_id, s.database_id) = 'SchemaChange'
-	left join #procedures v
-		on v.database_id = d.database_id 
-		and v.name = 'p_ValidateSchema'
-		and OBJECT_SCHEMA_NAME(v.object_id, v.database_id) = 'SchemaValidation'
+	left join #triggers t on t.database_id = d.database_id 
+	left join #procedures s on s.database_id = d.database_id 
+	left join #partitions r on r.database_id = d.database_id
 	where d.owner_sid <> 0x01
 	order by d.name;
 go
