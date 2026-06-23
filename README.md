@@ -41,8 +41,10 @@ There's a view in the database that stores schema changes. It's called [SchemaCh
 
 # Handling Schema Validation Rule Violations
 Rule violations include a rule code. It looks something like "DEFAULT-NAMING-1". 
-- **Step 1** - Typically, schema change scripts have multiple commands. One command could cause a rule violation and then the violation gets corrected by subsiquent commands. So run the following instruction and check the status. If it's SUCCESS, then the violation has been resolved. ```EXEC [SchemaValidation].[p_GetResults] 'DEFAULT-NAMING-1';```
-- **Step 2** - If none of the latest results are actually violations, run this: ```EXEC [SchemaValidation].[p_SetExpectedResultsToLatest] 'DEFAULT-NAMING-1';```
+- **Step 1** - Typically, schema change scripts have multiple commands. One command could cause a rule violation and then the violation gets corrected by subsiquent commands. So run the following instruction and check the status. If it's SUCCESS, then the violation has been resolved.
+```EXEC [SchemaValidation].[p_GetResults] 'DEFAULT-NAMING-1';```
+- **Step 2** - If none of the latest results are actually violations, run this:
+```EXEC [SchemaValidation].[p_SetExpectedResultsToLatest] 'DEFAULT-NAMING-1';```
 
 
 		('(1) If none of the latest results are actually issues, '),
