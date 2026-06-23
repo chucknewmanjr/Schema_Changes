@@ -45,24 +45,16 @@ Rule violations include a rule code. It looks something like "DEFAULT-NAMING-1".
 ```
 EXEC [SchemaValidation].[p_GetResults] 'DEFAULT-NAMING-1';
 ```
-
 - **Step 2** - If none of the latest results are actually violations, run this:
 ```
 EXEC [SchemaValidation].[p_SetExpectedResultsToLatest] 'DEFAULT-NAMING-1';
 ```
-
 - **Step 3** - Make additional schema changes to correct the issue and rerun the rule.
 ```
 EXEC [SchemaValidation].[p_ValidateRule] 'DEFAULT-NAMING-1';
 EXEC [SchemaValidation].[p_GetResults] 'DEFAULT-NAMING-1';
 ```
-
-		('(2) Make additional schema changes '),
-		('    to correct the issue and rerun the rule.'),
-		('        EXEC [SchemaValidation].[p_ValidateRule] ''' + @RuleCode + ''';'),
-		('        EXEC [SchemaValidation].[p_GetResults] ''' + @RuleCode + ''';'),
-		('(3) Update the CommandText of the rule '),
-		('    to allow more conditions and rerun the rule.')
+- **Step 4** - Update the CommandText of the rule to allow more conditions and rerun the rule.
 
 
 # Writing Schema Validation Rules
