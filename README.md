@@ -35,9 +35,11 @@ Here's what to drop:
 There's a view in the database that stores schema changes. It's called [SchemaChange].[v_SchemaChange]. 
 `SELECT TOP (100) * FROM [SchemaChange].[v_SchemaChange] ORDER BY 1 DESC;`
 
-# Schema Validation
+# Schema Validation Violation Handling
 qewr
 
+# Write Schema Validation Rules
+sdf
 
 # Schema Change Requirements
 asdf
