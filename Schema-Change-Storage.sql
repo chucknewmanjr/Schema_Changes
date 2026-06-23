@@ -12,9 +12,9 @@
 	-- enable trigger [t_SchemaChange] on database;
 	drop trigger if exists [t_SchemaChange] on database;
 	drop view if exists [SchemaChange].[v_SchemaChange];
-	drop proc if exists [SchemaChange].[p_SaveSchemaChange];
+	drop proc if exists [SchemaChange].[p_Save];
 	drop proc if exists [SchemaChange].[p_StatusReport];
-	-- DANGER: do not drop the SchemaChange.SchemaChange tables. Loss of data!
+	-- DANGER: do not drop the SchemaChange tables. Loss of data!
 */
 
 -- disable the trigger so that it doesn't fire while running this script.
@@ -23,35 +23,35 @@ if exists (select * from sys.triggers where name = 't_SchemaChange' and parent_c
 
 if SCHEMA_ID('SchemaChange') is null exec ('create schema [SchemaChange] authorization [dbo]');
 
-if OBJECT_ID('[SchemaChange].[SchemaChangeUser]') is null
-	create table [SchemaChange].[SchemaChangeUser] (
-		SchemaChangeUserID int not null identity constraint PK_SchemaChange_SchemaChangeUser primary key,
+if OBJECT_ID('[SchemaChange].[User]') is null
+	create table [SchemaChange].[User] (
+		UserID int not null identity constraint PK_SchemaChange_User primary key,
 		LoginName sysname not null,
 		UserName sysname not null,
-		constraint UX_SchemaChange_SchemaChangeUser unique (LoginName, UserName)
+		constraint UX_SchemaChange_User unique (LoginName, UserName)
 	);
 
-if OBJECT_ID('[SchemaChange].[SchemaChangeObject]') is null
-	create table [SchemaChange].[SchemaChangeObject] (
-		SchemaChangeObjectID int not null identity constraint PK_SchemaChange_SchemaChangeObject primary key,
+if OBJECT_ID('[SchemaChange].[Object]') is null
+	create table [SchemaChange].[Object] (
+		ObjectID int not null identity constraint PK_SchemaChange_Object primary key,
 		ServerName sysname not null,
 		DatabaseName sysname not null,
 		ObjectName sysname not null,
-		constraint UX_SchemaChange_SchemaChangeObject unique (ServerName, DatabaseName, ObjectName)
+		constraint UX_SchemaChange_Object unique (ServerName, DatabaseName, ObjectName)
 	);
 
-if OBJECT_ID('[SchemaChange].[SchemaChangeEvent]') is null
-	create table [SchemaChange].[SchemaChangeEvent] (
-		SchemaChangeEventID int not null identity
-			constraint PK_SchemaChange_SchemaChange primary key,
+if OBJECT_ID('[SchemaChange].[Event]') is null
+	create table [SchemaChange].[Event] (
+		EventID int not null identity
+			constraint PK_SchemaChange_Event primary key,
 		TriggerEventType int not null,
 		PostTime datetime2(2) not null, -- local
-		SchemaChangeUserID int not null
-			constraint FK_SchemaChange_SchemaChangeUserID
-			references [SchemaChange].[SchemaChangeUser] (SchemaChangeUserID),
-		SchemaChangeObjectID int not null
-			constraint FK_SchemaChange_SchemaChangeObjectID
-			references [SchemaChange].[SchemaChangeObject] (SchemaChangeObjectID),
+		UserID int not null
+			constraint FK_SchemaChange_UserID
+			references [SchemaChange].[User] (UserID),
+		ObjectID int not null
+			constraint FK_SchemaChange_ObjectID
+			references [SchemaChange].[Object] (ObjectID),
 		AlterTableActionList xml not null,
 		CommandText nvarchar(MAX)
 	);
@@ -61,7 +61,7 @@ go
 -- SELECT TOP 5 * FROM [SchemaChange].[v_SchemaChange] ORDER BY 1 DESC
 create or alter view [SchemaChange].[v_SchemaChange] as
 	SELECT
-		e.SchemaChangeEventID,
+		e.EventID,
 		e.PostTime,
 		u.LoginName,
 		u.UserName,
@@ -70,10 +70,10 @@ create or alter view [SchemaChange].[v_SchemaChange] as
 		o.ObjectName,
 		e.CommandText,
 		e.AlterTableActionList
-	FROM [SchemaChange].[SchemaChangeEvent] e
+	FROM [SchemaChange].[Event] e
 	join sys.trigger_event_types tet on e.TriggerEventType = tet.[type]
-	join [SchemaChange].[SchemaChangeUser] u on e.SchemaChangeUserID = u.SchemaChangeUserID
-	join [SchemaChange].[SchemaChangeObject] o on e.SchemaChangeObjectID = o.SchemaChangeObjectID;
+	join [SchemaChange].[User] u on e.UserID = u.UserID
+	join [SchemaChange].[Object] o on e.ObjectID = o.ObjectID;
 go
 
 -- ----------------------------------------------------------------------------
@@ -90,7 +90,7 @@ create or ALTER proc [SchemaChange].[p_StatusReport] as
 	declare @StorageCount int = (
 		select count(*)
 		from #procedures
-		where name = 'p_SaveSchemaChange'
+		where name = 'p_Save'
 			and OBJECT_SCHEMA_NAME(object_id, database_id) = 'SchemaChange'
 	);
 
@@ -113,7 +113,7 @@ create or ALTER proc [SchemaChange].[p_StatusReport] as
 		and t.parent_class_desc = 'DATABASE'
 	left join #procedures s 
 		on s.database_id = d.database_id 
-		and s.name = 'p_SaveSchemaChange'
+		and s.name = 'p_Save'
 		and OBJECT_SCHEMA_NAME(s.object_id, s.database_id) = 'SchemaChange'
 	left join #procedures v
 		on v.database_id = d.database_id 
@@ -129,7 +129,7 @@ go
 -- This proc does 2 things:
 -- 1 - Records the schema change event.
 -- 2 - Run the validation proc if it exists.
-create or alter proc [SchemaChange].[p_SaveSchemaChange] 
+create or alter proc [SchemaChange].[p_Save] 
 	@DatabaseName sysname,
 	@EventData xml
 as
@@ -158,37 +158,37 @@ as
 
 	set @ObjectName = CONCAT(@SchemaName + '.', @ObjectName);
 
-	insert [SchemaChange].[SchemaChangeUser] (LoginName, UserName)
+	insert [SchemaChange].[User] (LoginName, UserName)
 	select @LoginName, @UserName
 	except
 	select LoginName, UserName 
-	from [SchemaChange].[SchemaChangeUser] WITH (HOLDLOCK, UPDLOCK); 
+	from [SchemaChange].[User] WITH (HOLDLOCK, UPDLOCK); 
 	-- HOLDLOCK and UPDLOCK prevent deadlocks when using INSERT EXCEPT.
 
-	insert [SchemaChange].[SchemaChangeObject] (ServerName, DatabaseName, ObjectName)
+	insert [SchemaChange].[Object] (ServerName, DatabaseName, ObjectName)
 	select @@SERVERNAME, @DatabaseName, @ObjectName
 	except
 	select ServerName, DatabaseName, ObjectName
-	from [SchemaChange].[SchemaChangeObject] WITH (HOLDLOCK, UPDLOCK);
+	from [SchemaChange].[Object] WITH (HOLDLOCK, UPDLOCK);
 
-	insert [SchemaChange].[SchemaChangeEvent] (
+	insert [SchemaChange].[Event] (
 		TriggerEventType,
 		PostTime,
-		SchemaChangeUserID,
-		SchemaChangeObjectID,
+		UserID,
+		ObjectID,
 		AlterTableActionList,
 		CommandText
 	)
 	select
 		t.[type] as TriggerEventType,
 		@PostTime,
-		u.SchemaChangeUserID,
-		o.SchemaChangeObjectID,
+		u.UserID,
+		o.ObjectID,
 		@AlterTableActionList,
 		@CommandText
 	from sys.trigger_event_types t
-	cross join [SchemaChange].[SchemaChangeUser] u
-	cross join [SchemaChange].[SchemaChangeObject] o
+	cross join [SchemaChange].[User] u
+	cross join [SchemaChange].[Object] o
 	where t.[type_name] = @TriggerEventTypeName
 		and u.LoginName = @LoginName 
 		and u.UserName = @UserName
