@@ -39,8 +39,9 @@ Here's what to drop:
 There's a view in the database that stores schema changes. It's called [SchemaChange].[v_SchemaChange]. 
 `SELECT TOP (100) * FROM [SchemaChange].[v_SchemaChange] ORDER BY 1 DESC;`
 
-# Handling Schema Validation Violations
-Typically, schema change scripts have multiple statements that change the schema 
+# Handling Schema Validation Rule Violations
+Rule violations include a rule code. It looks something like "DEFAULT-NAMING-1". 
+- **Step 1** - Typically, schema change scripts have multiple statements that change the schema. One statement could cause a rule violation and then the violation get corrected in subsiquent statements. So the 
 
 # Writing Schema Validation Rules
 asdf
