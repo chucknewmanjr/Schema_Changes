@@ -128,14 +128,22 @@ as
 	if @ExistingStatusID <> [SchemaValidation].[f_StatusID]('DISABLED')
 		return @ExistingStatusID;
 
+	-- The SQL in @CommandText returns a table of data.
+	-- But what's needed is an XML string that can be stored in the Rule table.
 	set @CommandText = 'set @ResultsInside = (' + @CommandText + ' for xml path)';
 
+	-- sp_executesql can pass that XML fro the inside to the outside.
 	exec sp_executesql @CommandText, N'@ResultsInside xml out', @ResultsInside=@ResultsOutside out;
 
+	-- In order to compare the results to expectations,
+	-- the XML must get converted into rows.
 	insert @ExpectedResultsTable select cast(c.query('.') as nvarchar(max)) from @ExpectedResults.nodes('row') t(c);
 
+	-- That goes for the expected results too.
 	insert @ResultsOutsideTable select cast(c.query('.') as nvarchar(max)) from @ResultsOutside.nodes('row') t(c);
 
+	-- If the results have a row that is not in the expected rows,
+	-- then that's a failure.
 	set @NewStatusID = IIF(
 		exists (
 			select * from @ResultsOutsideTable 
@@ -174,6 +182,8 @@ create or alter proc [SchemaValidation].[p_ValidateSchema]
 as
 	set nocount on;
 
+	-- Build a select statement that contains the database name 
+	-- that is used to store schema changes.
 	declare @CommandText nvarchar(max) = concat('
 		select concat('' ('', 
 			format(PostTime, ''M/d/yyyy h:mmtt''), ''; '', 
@@ -188,18 +198,13 @@ as
 
 	declare @SchemaChangeTable table (SchemaChange varchar(max));
 
+	-- If the select fails, it shouldn't prevent the rest of the proc from running.
 	begin try;
 		insert @SchemaChangeTable exec (@CommandText);
 	end try 
 	begin catch;
 		print error_message();
 	end catch;
-
-	declare @SchemaChange varchar(max) = (select SchemaChange from @SchemaChangeTable);
-	declare @RuleCode varchar(50);
-	declare @FailureMessage varchar(200);
-	declare @StatusID tinyint;
-	declare @LoopStarted datetime = SYSDATETIME();
 
 	declare @Rules table (Enum int identity, RuleCode varchar(50));
 
@@ -211,18 +216,26 @@ as
 	order by ValidatedOn desc; 
 
 	declare @ThisEnum int = (select MAX(Enum) from @Rules);
+	declare @RuleCode varchar(50);
+	declare @FailureMessage varchar(200);
+	declare @StatusID tinyint;
+	declare @SchemaChange varchar(max) = (select SchemaChange from @SchemaChangeTable);
+	declare @LoopStarted datetime = SYSDATETIME();
 
 	while @ThisEnum > 0 begin;
 		begin try;
 			select @RuleCode = RuleCode from @Rules where Enum = @ThisEnum;
 
-			select
-				@FailureMessage = FailureMessage
+			select @FailureMessage = FailureMessage
 			from [SchemaValidation].[Rule]
 			where RuleCode = @RuleCode;
 
+			-- ----------------------------------------------------------------
+			-- Execute this rule individually.
 			EXEC @StatusID = [SchemaValidation].[p_ValidateRule] @RuleCode=@RuleCode, @EventID=@EventID;
+			-- ----------------------------------------------------------------
 
+			-- If the rule failed, print it. Don't throw an error.
 			if @StatusID = [SchemaValidation].[f_StatusID]('FAILURE') begin
 				print CONCAT(
 					'Schema Validation Rule violation occured: ', @FailureMessage, @SchemaChange, 
@@ -231,25 +244,29 @@ as
 			end;
 		end try
 		begin catch;
+			-- If an error occured, don't rethrow it. Just print it.
 			print CONCAT(ERROR_PROCEDURE(), ' #', ERROR_NUMBER(), ' line:', ERROR_LINE(), ' -- ', ERROR_MESSAGE());
 		end catch;
 
+		-- If rules exceed a tenth of a second, stop running rules.
 		if DATEDIFF(millisecond, @LoopStarted, SYSDATETIME()) > 100 break; -- 100 means 0.1 seconds
 
+		-- decrement the value.
 		set @ThisEnum -= 1;
 	end;
 go
 
 -- ----------------------------------------------------------------
+-- Called by [SchemaValidation].[p_GetResults] twice.
 -- Returns the XML as a resultset.
--- Called by [Tools].[p_Get_Schema_Validation_Details].
---		EXEC [Tools].[p_Get_Schema_Validation_Table] 1, '<row><a>1</a><b>2</b></row><row><a>3</a><b>4</b></row>', 'test';
+--     EXEC [SchemaValidation].[p_GetTableFromXML] 'Expected Results', '<row><a>1</a><b>2</b></row><row><a>3</a><b>4</b></row>';
 create or alter proc [SchemaValidation].[p_GetTableFromXML]
 	@Source sysname,
 	@XML xml
 as
 	set nocount on;
 
+	-- If there's no XML, return one row with NULL results.
 	if @XML is null begin;
 		select @Source as [Source], NULL as Results;
 
@@ -258,8 +275,10 @@ as
 
 	declare @Row table (RowNum int identity, RowXML xml);
 
+	-- First, the XML is parsed by row.
 	insert @Row (RowXML) select c.query('.') from @XML.nodes('row') t(c);
 
+	-- Then, calumn values get parsed into rows.
 	select r.RowNum, 
 		c.value('local-name(.)', 'sysname') as ColumnName, 
 		c.value('.', 'sysname') as Val
@@ -267,6 +286,7 @@ as
 	from @Row r
 	cross apply r.RowXML.nodes('row/*') t(c);
 
+	-- Finally, build SQL that pivots the rows into columns.
 	declare @sql nvarchar(MAX) = '';
 
 	select @sql = @sql + ', MIN(IIF(ColumnName=''' + ColumnName + ''', Val, NULL)) as ' + ColumnName
@@ -282,9 +302,8 @@ go
 
 -- ----------------------------------------------------------------
 -- Returns 4 resultsets about the current test status.
--- Better than SELECT * FROM [SchemaValidation].[vw_Schema_Validation]
--- Depends on [SchemaValidation].[p_Run_Schema_Validation] and [SchemaValidation].[p_Get_Schema_Validation_Table].
---		EXEC [SchemaValidation].[p_Get_Schema_Validation_Details] 1
+-- (1) the rule (2) the expected results (3) the latest results (4) instructions.
+--     EXEC [SchemaValidation].[p_GetResults]  @RuleCode='DEFAULT-NAMING-1';
 create or alter proc [SchemaValidation].[p_GetResults]
 	@RuleCode varchar(50)
 as
@@ -328,6 +347,5 @@ as
 		('    to allow more conditions and rerun the rule.')
 	) t (Instructions);
 go
-
 
 
