@@ -1,7 +1,7 @@
 -- ----------------------------------------------------------------------------
 -- ===== INSTRUCTIONS ===== --
 -- Run this script in each database to have schema changes recorded.
--- It creates a database trigger that fires for any schema changes.
+-- It creates a database trigger that fires for any schema change.
 -- ----------------------------------------------------------------------------
 
 -- Avoid accidentally firing the trigger for these schema changes.

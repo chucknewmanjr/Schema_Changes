@@ -12,8 +12,8 @@
 	-- enable trigger [t_SchemaChange] on database;
 	drop trigger if exists [t_SchemaChange] on database;
 	drop view if exists [SchemaChange].[v_SchemaChange];
-	drop proc if exists [SchemaChange].[p_FindSchemaChange];
 	drop proc if exists [SchemaChange].[p_SaveSchemaChange];
+	drop proc if exists [SchemaChange].[p_StatusReport];
 	-- DANGER: do not drop the SchemaChange.SchemaChange tables. Loss of data!
 */
 
@@ -58,8 +58,7 @@ if OBJECT_ID('[SchemaChange].[SchemaChangeEvent]') is null
 go
 
 -- ----------------------------------------------------------------------------
--- Called by the [SchemaChange].[v_SchemaValidation] view.
---		SELECT TOP 5 * FROM [SchemaChange].[v_SchemaChange] ORDER BY 1 DESC
+-- SELECT TOP 5 * FROM [SchemaChange].[v_SchemaChange] ORDER BY 1 DESC
 create or alter view [SchemaChange].[v_SchemaChange] as
 	SELECT
 		e.SchemaChangeEventID,
@@ -78,6 +77,7 @@ create or alter view [SchemaChange].[v_SchemaChange] as
 go
 
 -- ----------------------------------------------------------------------------
+-- Reports on the status of the schema change and schema validation features.
 create or ALTER proc [SchemaChange].[p_StatusReport] as
 	select top 0 db_id() as database_id, * into #triggers from sys.triggers;
 
