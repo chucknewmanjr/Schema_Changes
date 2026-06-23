@@ -16,7 +16,9 @@ Typically, the schema changes are stored in a single database such as Utility or
 ### Step 2 - asdf
 
 # Potential Instalation Issues
-- If there's more than one database that stores schema changes and Schema-Change-Transmission.sql is executed on a database that does not store schema changes, then an error occurs. That's because the trigger doesn't know where to send changes. Either uninstall Schema
+- If there's more than one database that stores schema changes and Schema-Change-Transmission.sql is executed on a database that does not store schema changes, then an error occurs. That's because the trigger doesn't know where to send changes. Either install Schema-Change-Storage.sql in the database or uninstall SchemaChange from all but one database. But be careful. Uninstalling SchemaChange might cause a significant data loss.
+- If Schema-Change-Transmission.sql is executed before there's any database to store schema changes, it fails. Run Schema-Change-Storage.sql first.
+- If you run Schema-Change-Storage.sql on a second database, no schema changes will get saved there until you run Schema-Change-Transmission.sql on that same database.
 
 # Uninstall
 Here's what to drop:
