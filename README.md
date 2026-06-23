@@ -11,11 +11,12 @@ This repository is specifically for Microsoft SQL Server. It contains 4 Transact
 
 # Installation
 Before we get to writing rules and handling violations, let's try to get this thing running.
-## Step 1 - Schema-Change-Storage.sql
+### Step 1 - Schema-Change-Storage.sql
 Typically, the schema changes are stored in a single database such as Utility or Tools. In that case, the Schema-Change-Storage.sql script is executed in only that database. However, it's also possible to have each database store their own schema changes. In that case, changes are not combined into a single database.
+### Step 2 - asdf
 
 # Potential Instalation Issues
-- If there's more than one database that stores schema changes and Schema-Change-Transmission.sql is executed on a database that does not store schema changes, then an error occurs. That's because the trigger doesn't know where to send changes. Either
+- If there's more than one database that stores schema changes and Schema-Change-Transmission.sql is executed on a database that does not store schema changes, then an error occurs. That's because the trigger doesn't know where to send changes. Either uninstall Schema
 
 # Uninstall
 Here's what to drop:
