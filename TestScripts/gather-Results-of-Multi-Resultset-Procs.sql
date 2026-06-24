@@ -1,3 +1,9 @@
+/*
+	This is a research script.
+	It demonstrates a way for one proc to get all of the results 
+	from a proc that returns multiple resetsets.
+*/
+
 create or alter proc [dbo].[p_TempText] as
 	select * from (values
 		(1, 'A', 'alpha'),
